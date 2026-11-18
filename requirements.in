@@ -1,0 +1,11 @@
+pandas
+numpy
+geopandas
+shapely
+pyproj
+pyogrio
+lifelines
+matplotlib
+python-dotenv
+openpyxl
+pyarrow
