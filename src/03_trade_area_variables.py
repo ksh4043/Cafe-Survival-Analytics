@@ -168,8 +168,8 @@ def main() -> None:
         path.mkdir(parents=True, exist_ok=True)
 
     cafes = pd.read_parquet(INPUT).copy()
-    if len(cafes) != 11_515:
-        raise ValueError(f"Expected 11,515 cohort rows, got {len(cafes):,}")
+    if cafes.empty:
+        raise ValueError("Spatial cohort is empty")
     cafes["permit_date"] = pd.to_datetime(cafes["permit_date"])
     cafes["trdar_quarter_prior"] = previous_quarter(cafes["permit_date"])
     cafes["trdar_cd_assigned"] = cafes["trdar_cd_nearest"].astype("string")
@@ -215,7 +215,7 @@ def main() -> None:
 
 ## 주요 결과
 
-분석 대상 11,515개 개업 점포에 개업 **직전 분기**의 최근접 상권 지표를 결합했다. 200m 이내 최근접 상권 배정(주 분석 기본값)을 충족하는 점포는 {format_count(int(cafes['trdar_within_200m'].sum()))}개이며, 이 중 개인 카페는 {format_count(int((personal & cafes['trdar_within_200m']).sum()))}개다. 좌표가 없는 점포도 분석 파일에 남기되 상권 코드와 상권 변수는 결측으로 유지했다.
+분석 대상 {format_count(len(cafes))}개 개업 점포에 개업 **직전 분기**의 최근접 상권 지표를 결합했다. 200m 이내 최근접 상권 배정(주 분석 기본값)을 충족하는 점포는 {format_count(int(cafes['trdar_within_200m'].sum()))}개이며, 이 중 개인 카페는 {format_count(int((personal & cafes['trdar_within_200m']).sum()))}개다. 좌표가 없는 점포도 분석 파일에 남기되 상권 코드와 상권 변수는 결측으로 유지했다.
 
 {markdown_table(group_table)}
 
@@ -253,11 +253,11 @@ def main() -> None:
 
 ### 재현성 검증
 
-스크립트는 원자료를 수정하지 않고 CP949로 읽으며, `.tmp/`를 `TEMP`/`TMP`로 지정한다. 결합 뒤 행 수는 입력과 같은 11,515행인지 확인하고, 상권-분기 패널과 SHP 코드의 키 중복을 중단 조건으로 검사한다. 분석 파일 앞 200행은 UTF-8 BOM CSV로 별도 저장해 VS Code에서 바로 검수할 수 있다.
+스크립트는 원자료를 수정하지 않고 CP949로 읽으며, `.tmp/`를 `TEMP`/`TMP`로 지정한다. 결합 뒤 행 수는 입력과 같은 {format_count(len(cafes))}행인지 확인하고, 상권-분기 패널과 SHP 코드의 키 중복을 중단 조건으로 검사한다. 분석 파일 앞 200행은 UTF-8 BOM CSV로 별도 저장해 VS Code에서 바로 검수할 수 있다.
 
 ## 산출물과 결정이 필요한 사항
 
-- `data/processed/cafes_analysis.parquet`: 11,515행, 기존 공간·경쟁 변수와 상권 변수 및 배정 표지
+- `data/processed/cafes_analysis.parquet`: {format_count(len(cafes))}행, 기존 공간·경쟁 변수와 상권 변수 및 배정 표지
 - `docs/tables/03_trade_area_summary.csv`: 상권 변수 분포
 - `docs/review/03_cafes_analysis_sample.csv`: 분석 파일 앞 200행 검수본
 

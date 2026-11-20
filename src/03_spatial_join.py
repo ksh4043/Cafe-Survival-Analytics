@@ -331,7 +331,7 @@ def render_spatial_report(
 
 ## 산출물
 
-- `data/processed/cafes_spatial.parquet`: 11,515개 분석 점포의 공간·경쟁 변수
+- `data/processed/cafes_spatial.parquet`: {fmt_int(len(spatial))}개 분석 점포의 공간·경쟁 변수
 - `docs/tables/03_competition_summary.csv`: 반경·표본·경쟁 구분별 분포
 - `docs/review/03_district_mismatch.csv`: 주소-폴리곤 자치구 불일치 표본
 - `docs/review/03_outside_polygon.csv`: 상권 폴리곤 밖 점포 표본

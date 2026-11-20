@@ -34,6 +34,7 @@ BRAND_VARIANTS_PATH = PROJECT_ROOT / "docs/review/02_brand_variants.csv"
 NARROWED_BRANDS_PATH = PROJECT_ROOT / "docs/review/02_narrowed_brands.csv"
 CHAIN_CANDIDATES_PATH = PROJECT_ROOT / "docs/review/02_chain_candidates.csv"
 CHAIN_CLASSIFICATION_PATH = PROJECT_ROOT / "docs/review/02_chain_classification.csv"
+PLAY_CONSULT_REVIEW_PATH = PROJECT_ROOT / "docs/review/03_play_consult_cafe_matches.csv"
 
 EXPECTED_SHA256 = "44a5c4cbe64b0dd7d9cbbfa28c0532f003910644ddf22b2cbf4bf24751c16f3b"
 OBSERVATION_END = pd.Timestamp("2026-09-30")
@@ -94,6 +95,7 @@ NONCAFE_CHAIN_CANDIDATES = frozenset({
 NOT_CHAIN_CANDIDATES = frozenset({"(주)마체베트", "카페 아이엔지", "카페 아이엠티", "카페 서울숲"})
 
 SEOUL_BOUNDS = {"lon_min": 126.76, "lon_max": 127.19, "lat_min": 37.42, "lat_max": 37.71}
+TAROT_AMBIGUOUS_NAMES = frozenset({"까스타로", "까스타로castalor", "산타로사", "쵸타로", "인터페스타로티앤"})
 
 # Counts in the report produced before this follow-up.  The source data and
 # pre-existing validity rules are unchanged, so these are the comparable
@@ -284,10 +286,43 @@ def classify_noncafes(names: pd.Series, patterns: pd.DataFrame) -> tuple[pd.Seri
     reason = pd.Series(pd.NA, index=names.index, dtype="string")
     for record in patterns.itertuples(index=False):
         matches = normalized.str.contains(record.compiled_pattern, na=False)
+        # '타로' can also describe taro-flavoured drinks.  Those shops remain
+        # coffee shops; the complete hit list is written for manual review.
+        if record.업종명 == "사주·타로 카페":
+            beverage_taro = normalized.str.contains(
+                r"(?:타로(?:밀크티|버블티|티|tea)|(?:밀크티|버블티).*타로)", regex=True, na=False
+            )
+            ambiguous_name = normalized.isin(TAROT_AMBIGUOUS_NAMES)
+            matches &= ~(beverage_taro | ambiguous_name)
         newly_matched = matches & ~excluded
         excluded.loc[newly_matched] = True
         reason.loc[newly_matched] = record.업종명
     return excluded, reason
+
+
+def make_play_consult_review(names: pd.Series, patterns: pd.DataFrame, excluded: pd.Series, reason: pd.Series) -> pd.DataFrame:
+    """Audit every board-game or fortune-consulting name hit across all dates."""
+    normalized = names.map(normalize_name)
+    selected = pd.Series(False, index=names.index, dtype=bool)
+    hit_category = pd.Series(pd.NA, index=names.index, dtype="string")
+    for record in patterns.itertuples(index=False):
+        if record.업종명 not in {"만화·스터디·보드게임카페", "사주·타로 카페"}:
+            continue
+        hit = normalized.str.contains(record.compiled_pattern, na=False)
+        selected |= hit
+        hit_category.loc[hit & hit_category.isna()] = record.업종명
+    result = pd.DataFrame({"사업장명": names, "매칭 분류": hit_category, "제외 여부": np.where(excluded, "제외", "유지")})
+    ambiguous_name = normalized.isin(TAROT_AMBIGUOUS_NAMES)
+    result["판단 근거"] = np.where(
+        result["제외 여부"].eq("제외"),
+        "상호가 승인된 놀이·상담형 카페 제외 패턴에 일치",
+        np.where(
+            ambiguous_name,
+            "상호의 '타로'가 상담 서비스를 뜻하는지 확인할 수 없어 카페로 유지(검토 필요)",
+            np.where(result["매칭 분류"].eq("사주·타로 카페").fillna(False), "타로 맛 음료·버블티 표기로 보여 카페로 유지", "다른 제외 사유가 우선 적용되어 카페 제외 규칙은 미적용"),
+        ),
+    )
+    return result.loc[selected].sort_values(["매칭 분류", "사업장명"], kind="stable")
 
 
 def make_chain_classification(candidates: pd.DataFrame) -> pd.DataFrame:
@@ -637,6 +672,12 @@ def main() -> None:
     all_cafes["excluded_noncafe"], all_cafes["noncafe_category"] = classify_noncafes(
         all_cafes["사업장명"], noncafe_patterns
     )
+    play_consult_review = make_play_consult_review(
+        all_cafes["사업장명"], noncafe_patterns, all_cafes["excluded_noncafe"], all_cafes["noncafe_category"]
+    )
+    play_consult_review.insert(0, "관리번호", all_cafes.loc[play_consult_review.index, "관리번호"])
+    play_consult_review.insert(2, "인허가일자", all_cafes.loc[play_consult_review.index, "인허가일자"])
+    play_consult_review.to_csv(PLAY_CONSULT_REVIEW_PATH, index=False, encoding="utf-8-sig")
 
     new_exclusions = (
         all_cafes["excluded_temporary_permit"]
@@ -808,9 +849,9 @@ def main() -> None:
         .reindex(columns=["매칭 유지", "매칭 해제"], fill_value=0)
         .reset_index()
     )
-    report = f"""# 02 인허가 전처리 보고서
+    report = f"""# 인허가 전처리 보고서
 
-실행일: 2026-11-18  
+실행일: 2026-11-20
 입력: `data/raw/refreshment_establishment/식품_휴게음식점_서울특별시.csv` (CP949)  
 입력 SHA256: `{observed_hash}` (지정값과 일치)  
 관측 종료일: {OBSERVATION_END.date()}  
@@ -829,7 +870,7 @@ def main() -> None:
 
 폐업일 비결측인데 파싱에 실패한 행은 {format_int(int(closure_date_parse_failure.sum()))}건이다. 개업 기간 표본(신규 제외 전)의 한시적 인허가는 {format_int(temporary_cohort)}건, 생존기간 0일 이하는 {format_int(nonpositive_cohort)}건, 카페가 아닌 업종은 {format_int(noncafe_cohort)}건이다. 세 제외 기준에서 복수 사유가 겹치는 행은 {format_int(exclusion_overlap_cohort)}건이다.
 
-`cafes_licenses_all.parquet`은 기존 유효성 검사를 통과한 커피숍 행을 모두 보존한다. `cafes_clean.parquet`은 한시적 인허가, 생존기간 0일 이하, 카페가 아닌 업종 행을 제외한 이후 단계의 입력이며, 이 행들은 분석 표본과 향후 경쟁 점포 수 계산 모두에서 제외한다. 카페가 아닌 업종은 편의점, 만화·스터디·보드게임카페, 헬스장, 식사 중심 체인, 기업·기관 운영처럼 일반 카페 영업으로 보기 어려운 상호의 승인된 패턴으로 한정했다. 제외 목록은 `docs/review/02_excluded_rows.csv`에 남겼다.
+`cafes_licenses_all.parquet`은 기존 유효성 검사를 통과한 커피숍 행을 모두 보존한다. `cafes_clean.parquet`은 한시적 인허가, 생존기간 0일 이하, 카페가 아닌 업종 행을 제외한 이후 단계의 입력이며, 이 행들은 분석 표본과 향후 경쟁 점포 수 계산 모두에서 제외한다. 카페가 아닌 업종은 편의점, 만화·스터디·보드게임카페, 사주·타로 카페, 헬스장, 식사 중심 체인, 기업·기관 운영처럼 일반 카페 영업으로 보기 어려운 상호의 승인된 패턴으로 한정했다. 일반 `보드게임` 표기도 포함했다. 타로 맛 음료·버블티 표기 또는 상담 서비스 여부가 모호한 상호는 유지했으며, 모든 놀이·상담형 매칭은 `docs/review/03_play_consult_cafe_matches.csv`에 남겼다. 고양이·애견·키즈카페는 이 규칙에 포함하지 않아 커피숍으로 유지한다. 제외 목록은 `docs/review/02_excluded_rows.csv`에 남겼다.
 
 ## 개업 기간 표본의 사건과 표본 구성
 
