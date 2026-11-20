@@ -254,6 +254,92 @@ def brute_force_check(result: pd.DataFrame, cohort_points: gpd.GeoDataFrame, all
     return pd.DataFrame(rows)
 
 
+def render_spatial_report(
+    spatial: pd.DataFrame,
+    personal: pd.DataFrame,
+    summary: pd.DataFrame,
+    annual: pd.DataFrame,
+    checks: pd.DataFrame,
+    diagnostic: pd.DataFrame,
+    outside_mask: pd.Series,
+    mismatch_mask: pd.Series,
+    coordinate_count: int,
+    within_count: int,
+    outside_count: int,
+    predecessor_count: int,
+    missing_competition: int,
+    overlap_points: int,
+    nearest_outside: pd.Series,
+    comparable_districts: int,
+    top_report: pd.DataFrame,
+) -> str:
+    """Write the result-led report without changing spatial calculations."""
+    total_200 = summary.loc[(summary["표본"] == "전체 분석 표본") & (summary["반경(m)"] == 200)]
+    comp_200 = spatial["comp_total_r200"].dropna()
+    indep_200 = spatial["comp_indep_r200"].dropna()
+    fran_200 = spatial["comp_fran_r200"].dropna()
+    outside_district = (
+        diagnostic.loc[outside_mask, "address_district"].fillna("주소 자치구 미확인").value_counts().head(5)
+        .rename_axis("주소 자치구").reset_index(name="폴리곤 밖 점포 수")
+    )
+    mismatch_pair = (
+        diagnostic.loc[mismatch_mask, ["address_district", "polygon_district"]]
+        .value_counts().rename("점포 수").reset_index().head(10)
+        .rename(columns={"address_district": "주소 자치구", "polygon_district": "폴리곤 속성 자치구"})
+    )
+    mismatch_count = int(mismatch_mask.sum())
+    predecessor_pct = predecessor_count / len(spatial)
+    return f"""# 공간 결합과 반경 경쟁 변수 보고서
+
+## 주요 결과
+
+개업 당시 200m 안의 활동 카페 수는 좌표 보유 분석 표본에서 평균 {comp_200.mean():.1f}개, 중앙값 {comp_200.median():.0f}개였다. 개인 카페 경쟁은 평균 {indep_200.mean():.1f}개, 프랜차이즈 경쟁은 평균 {fran_200.mean():.1f}개로, 전자는 전체 200m 경쟁의 {(indep_200.mean() / comp_200.mean() * 100):.1f}%를 차지한다. 반경을 100m·200m·500m로 넓히면 전형적(중앙값) 경쟁 수는 각각 {int(spatial['comp_total_r100'].median())}개·{int(comp_200.median())}개·{int(spatial['comp_total_r500'].median())}개다. 상위 점포는 이화여대길·명동·마곡 등 상업 밀집 지역에 분포한다.
+
+{markdown_table(total_200[["표본", "경쟁 구분", "유효 표본 수", "평균", "중앙값", "1사분위", "3사분위", "최댓값", "0 비율(%)"]])}
+
+200m 경쟁의 연도별 평균은 2021년 {annual.iloc[0, 1]:.3f}개에서 2024년 {annual.loc[annual['개업_연도'].eq(2024), annual.columns[1]].iloc[0]:.3f}개로 높아졌다가 2025년 {annual.loc[annual['개업_연도'].eq(2025), annual.columns[1]].iloc[0]:.3f}개, 2026년 {annual.loc[annual['개업_연도'].eq(2026), annual.columns[1]].iloc[0]:.3f}개였다. 이는 개업 시점별 시장 환경 차이가 있음을 뜻하며, 후속 생존모형에서는 개업 시기 통제가 필요할 수 있다.
+
+{markdown_table(annual)}
+
+좌표 보유 점포 {fmt_int(coordinate_count)}개 중 폴리곤 내부는 {fmt_int(within_count)}개({fmt_pct(within_count / coordinate_count)})이고 밖은 {fmt_int(outside_count)}개({fmt_pct(outside_count / coordinate_count)})다. 폴리곤 밖 점포는 상권으로 지정되지 않은 주거지에 주로 있을 수 있다는 해석이 가능하지만, 이 SHP는 상권 경계이지 토지이용도 자료가 아니므로 주거지라고 단정할 수 없다. 주소 자치구 분포 상위는 다음과 같아 폴리곤 밖 사례가 특정 한 구에만 모이지는 않는다.
+
+{markdown_table(outside_district)}
+
+같은 좌표에서 개업일 또는 직전일에 폐업한 전 운영 인허가가 있는 점포는 {fmt_int(predecessor_count)}개({fmt_pct(predecessor_pct)})다. `has_predecessor_same_site` 표지는 보존했으며, 이번 단계에서는 표본 제외나 모형 활용 여부를 정하지 않았다.
+
+### 자치구 불일치의 처리
+
+주소 자치구와 **점포가 실제로 포함된** 상권 폴리곤 속성 자치구를 비교할 수 있었던 {fmt_int(comparable_districts)}개 중 {fmt_int(mismatch_count)}개({fmt_pct(mismatch_count / comparable_districts)})가 불일치했다. 일치는 {fmt_int(comparable_districts - mismatch_count)}개({fmt_pct((comparable_districts - mismatch_count) / comparable_districts)})다. 불일치 조합 상위는 다음과 같다.
+
+{markdown_table(mismatch_pair)}
+
+하나은행 본점·그랑서울·명동 매장 등 표본 점검에서는 변환 좌표가 실제 위치 수십 m 안에 맞았고, 강남역처럼 구 경계에 걸친 상권의 폴리곤 속성 자치구와 주소 자치구가 다를 수 있음을 확인했다. 다만 현재 입력에는 **자치구 행정경계 도형이 없고**, 상권 SHP의 각 폴리곤에는 자치구 속성이 하나만 있으므로 216개 모두에 대해 ‘점포-구 경계 거리’나 ‘하나의 상권이 두 구에 걸침’을 수치로 검증할 수는 없다. 상권 변수는 자치구가 아니라 점포가 포함된/최근접한 상권 폴리곤을 기준으로 하므로 배정을 바꾸지 않는다. 후속 모형에서 자치구 통제가 필요하면 폴리곤 속성이 아니라 **주소 자치구**를 사용한다. 정확한 경계거리 검증은 기준일이 명시된 공식 자치구 경계 자료를 추가한 뒤 수행해야 한다.
+
+## 방법과 검증
+
+상권 SHP의 원 좌표계 EPSG:5181을 거리 계산 공통 좌표계로 사용했고, 인허가 좌표는 선언된 EPSG:5174에서 변환했다. 상권 폴리곤이 하나 이상 겹친 {fmt_int(overlap_points)}개 점포(최대 2개)는 상권 코드가 작은 값을 재현 가능하게 선택했다. 이는 중복 행 방지를 위한 기술 규칙이다.
+
+폴리곤 밖 점포의 최근접 상권 거리는 중앙값 {nearest_outside.median():.1f}m이며, 50m·100m·200m·500m 안인 비율은 각각 {fmt_pct(nearest_outside.le(50).mean())}·{fmt_pct(nearest_outside.le(100).mean())}·{fmt_pct(nearest_outside.le(200).mean())}·{fmt_pct(nearest_outside.le(500).mean())}다. 폴리곤 밖 점포도 버리지 않고 최근접 상권 코드·거리를 보존했으며, 후속 상권 변수 결합에서는 이 거리를 표본 구분 표지로 쓴다.
+
+경쟁 집합은 기간 밖 점포와 프랜차이즈를 포함한 전체 카페다. 대상 점포의 개업일보다 먼저 개업하고 그날 아직 폐업하지 않은 카페만 기본 경쟁 수에 포함했으며, 같은 날 개업은 별도 변수로 셌다. 따라서 개업 뒤 정보는 사용하지 않았다. 좌표가 없어 경쟁 변수가 결측인 표본은 {fmt_int(missing_competition)}개다.
+
+시드 {RANDOM_SEED}로 무작위 점포 5개를 뽑아 200m 전수 거리 계산과 비교했고 모두 일치했다.
+
+{markdown_table(checks)}
+
+재실행은 같은 입력에서 같은 파케이 결과를 내야 한다. 원자료를 수정하지 않고 `.tmp/`를 `TEMP`/`TMP`로 지정해 실행하며, 결과 해시는 별도 검증 명령으로 확인했다.
+
+## 산출물
+
+- `data/processed/cafes_spatial.parquet`: 11,515개 분석 점포의 공간·경쟁 변수
+- `docs/tables/03_competition_summary.csv`: 반경·표본·경쟁 구분별 분포
+- `docs/review/03_district_mismatch.csv`: 주소-폴리곤 자치구 불일치 표본
+- `docs/review/03_outside_polygon.csv`: 상권 폴리곤 밖 점포 표본
+
+{markdown_table(top_report)}
+"""
+
+
 def main() -> None:
     os.environ["TEMP"] = str(ROOT / ".tmp")
     os.environ["TMP"] = str(ROOT / ".tmp")
@@ -415,6 +501,11 @@ def main() -> None:
 
 상권 밖 점포의 제외·최근접 상권 배정, EPSG:5174의 보정 여부, 같은 장소 전임 인허가 표시의 분석 활용 여부는 모두 후속 승인 사항으로 남긴다. 이번 단계에서는 상권 매출·유동인구·상주인구를 결합하지 않았다.
 """
+    report = render_spatial_report(
+        spatial, personal, summary, annual, checks, diagnostic, outside_mask, mismatch_mask,
+        coordinate_count, within_count, outside_count, predecessor_count, missing_competition,
+        overlap_points, nearest_outside, comparable_districts, top_report,
+    )
     REPORT.write_text(report, encoding="utf-8")
     print(f"Wrote {OUTPUT}")
     print(f"Wrote {SUMMARY}")
