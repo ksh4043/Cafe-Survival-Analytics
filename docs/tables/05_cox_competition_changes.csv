@@ -1,0 +1,3 @@
+﻿variable,variable_label,coefficient_competition_only,coefficient_competition_demand,hazard_ratio_competition_only,hazard_ratio_competition_demand,coefficient_change_pct,hazard_ratio_change_pct
+comp_indep_r200,200m 개인 카페 경쟁 (1개),0.008194231346544631,0.009085208271002624,1.0082278959492488,1.0091266040437687,10.873221499094026,0.08913739623062478
+comp_fran_r200,200m 프랜차이즈 경쟁 (1개),0.005951589211808327,0.005543979731156888,1.0059693351068395,1.0055593760258854,-6.848750243762063,-0.04075264191930385

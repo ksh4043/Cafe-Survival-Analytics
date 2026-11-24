@@ -1,0 +1,23 @@
+﻿model,model_key,variable,variable_label,test_statistic,p_value,time_transform
+상권 + 점포 단위 경쟁,store_competition,comp_fran_r200,200m 프랜차이즈 경쟁 (1개),0.10431746909365647,0.7467087605944743,rank
+상권 + 점포 단위 경쟁,store_competition,comp_indep_r200,200m 개인 카페 경쟁 (1개),0.0015771631154926486,0.9683215283534099,rank
+상권 + 점포 단위 경쟁,store_competition,log_floating_z,로그 유동인구 (1표준편차),0.008586796731701566,0.9261697268352088,rank
+상권 + 점포 단위 경쟁,store_competition,log_resident_pop,로그 상주인구 (1 단위),0.0663570961037651,0.7967166243277747,rank
+상권 + 점포 단위 경쟁,store_competition,log_sales_z,로그 총매출 (1표준편차),0.00883917267885412,0.9250957522475707,rank
+상권 + 점포 단위 경쟁,store_competition,trdar_coffee_stores,상권 커피 점포 수 (1개),0.00018117344880485853,0.9892607432938302,rank
+상권 + 점포 단위 경쟁,store_competition,trdar_coffee_stores_missing,상권 커피 점포 수 결측 표시,0.21446785828217965,0.6432878547251173,rank
+상권 + 점포 단위 경쟁,store_competition,type_관광특구,관광특구 (골목상권 대비),0.9316777289127732,0.3344273474226422,rank
+상권 + 점포 단위 경쟁,store_competition,type_발달상권,발달상권 (골목상권 대비),0.004135213679313427,0.9487268729370044,rank
+상권 + 점포 단위 경쟁,store_competition,type_전통시장,전통시장 (골목상권 대비),0.0016210117833724725,0.9678844157372717,rank
+상호작용,interaction,comp_fran_r200,200m 프랜차이즈 경쟁 (1개),0.00029371644783246227,0.9863263979694715,rank
+상호작용,interaction,comp_indep_r200,200m 개인 카페 경쟁 (1개),0.00011755287290734947,0.9913493612457038,rank
+상호작용,interaction,comp_total_x_floating,전체 경쟁×로그 유동인구(표준화),0.7165657157450405,0.39727273234783966,rank
+상호작용,interaction,comp_total_x_sales,전체 경쟁×로그 총매출(표준화),0.5893596240438154,0.4426668550098264,rank
+상호작용,interaction,log_floating_z,로그 유동인구 (1표준편차),0.7706988424949409,0.3800009466064189,rank
+상호작용,interaction,log_resident_pop,로그 상주인구 (1 단위),0.03939490800407485,0.8426683534212468,rank
+상호작용,interaction,log_sales_z,로그 총매출 (1표준편차),0.9318354093553393,0.33438644883630053,rank
+상호작용,interaction,trdar_coffee_stores,상권 커피 점포 수 (1개),0.005695031966762569,0.9398443975038856,rank
+상호작용,interaction,trdar_coffee_stores_missing,상권 커피 점포 수 결측 표시,0.20579181922804413,0.6500859196529006,rank
+상호작용,interaction,type_관광특구,관광특구 (골목상권 대비),1.1896715003960594,0.27539582855948475,rank
+상호작용,interaction,type_발달상권,발달상권 (골목상권 대비),0.0004693426181886087,0.9827157282341565,rank
+상호작용,interaction,type_전통시장,전통시장 (골목상권 대비),0.02171866326977297,0.8828379848442734,rank
