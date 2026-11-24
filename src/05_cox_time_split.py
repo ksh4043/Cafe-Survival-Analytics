@@ -19,6 +19,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FixedLocator, FuncFormatter, NullLocator
 import numpy as np
 import pandas as pd
 from lifelines import CoxPHFitter
@@ -264,7 +265,8 @@ def plot_effects(effects: pd.DataFrame) -> None:
     fig, axis = plt.subplots(figsize=(10, 5.8))
     y_base = np.arange(len(order))
     positions = {PERIOD_LABELS[0]: y_base + .16, PERIOD_LABELS[1]: y_base - .16}
-    colors = {PERIOD_LABELS[0]: "#009E73", PERIOD_LABELS[1]: "#CC79A7"}
+    # 개업 시기 색(#009E73·#CC79A7)과 겹치지 않게 구간 색을 따로 쓴다.
+    colors = {PERIOD_LABELS[0]: "#333333", PERIOD_LABELS[1]: "#56B4E9"}
     for period in PERIOD_LABELS:
         current = selected.loc[selected["period"].eq(period)].set_index("variable").loc[order]
         hr = current["hazard_ratio"].to_numpy(float)
@@ -277,11 +279,15 @@ def plot_effects(effects: pd.DataFrame) -> None:
         )
     axis.axvline(1, color="#555555", linestyle="--", linewidth=1)
     axis.set_xscale("log")
+    # 맑은 고딕에는 U+2212 마이너스 글자가 없어 로그 축 기본 눈금(mathtext)이 깨진다.
+    axis.xaxis.set_major_locator(FixedLocator([0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.5]))
+    axis.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}"))
+    axis.xaxis.set_minor_locator(NullLocator())
     axis.set_yticks(y_base, [labels[name] for name in order])
     axis.set_xlabel("위험비 (95% 신뢰구간, 로그 축)")
     axis.set_title("개업 후 1년 이내·이후의 경쟁 및 수요 연관")
     axis.grid(axis="x", color="#E2E2E2", linewidth=.7)
-    axis.legend(frameon=False, loc="lower left")
+    axis.legend(frameon=False, loc="upper right")
     fig.tight_layout()
     fig.savefig(FIGURE_DIR / "05_cox_time_split_hr.png", bbox_inches="tight", dpi=200)
     plt.close(fig)
