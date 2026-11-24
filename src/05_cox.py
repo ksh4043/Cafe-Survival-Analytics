@@ -170,8 +170,22 @@ def prepare_sample(data: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, dict
     return base, pd.DataFrame(flow), scale_info
 
 
-def fit_cox(frame: pd.DataFrame, covariates: list[str]) -> CoxPHFitter:
-    columns = ["survival_days", "event", "opening_stratum", "trdar_cd_assigned", *covariates]
+def fit_cox(
+    frame: pd.DataFrame,
+    covariates: list[str],
+    *,
+    robust: bool = True,
+    cluster: bool = True,
+) -> CoxPHFitter:
+    """Fit the established Cox specification.
+
+    The default retains the main-analysis estimator exactly.  The optional
+    non-clustered, non-robust fit is used only for Schoenfeld-residual tests,
+    whose residual scaling must match the model covariance estimator.
+    """
+    columns = ["survival_days", "event", "opening_stratum", *covariates]
+    if cluster:
+        columns.insert(3, "trdar_cd_assigned")
     fitting_frame = frame.loc[:, columns].copy()
     # lifelines calculates stratum-specific medians before fitting.  Keeping
     # binary covariates as pandas nullable integers can fail when a stratum
@@ -180,11 +194,13 @@ def fit_cox(frame: pd.DataFrame, covariates: list[str]) -> CoxPHFitter:
     fitting_frame["survival_days"] = fitting_frame["survival_days"].astype(float)
     fitting_frame["event"] = fitting_frame["event"].astype(int)
     model = CoxPHFitter()
-    model.fit(
-        fitting_frame, duration_col="survival_days", event_col="event",
-        strata="opening_stratum", cluster_col="trdar_cd_assigned", robust=True,
-        show_progress=False,
-    )
+    options: dict[str, object] = {
+        "duration_col": "survival_days", "event_col": "event",
+        "strata": "opening_stratum", "robust": robust, "show_progress": False,
+    }
+    if cluster:
+        options["cluster_col"] = "trdar_cd_assigned"
+    model.fit(fitting_frame, **options)
     return model
 
 

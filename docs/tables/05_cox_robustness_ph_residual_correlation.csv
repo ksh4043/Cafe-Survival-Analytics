@@ -1,0 +1,9 @@
+﻿model,model_key,variable,variable_label,n_events,pearson_r_scaled_schoenfeld_time_rank,p_value
+상권 + 점포 단위 경쟁,store_competition,comp_indep_r200,200m 개인 카페 경쟁 (1개),3411,-0.014803326455462056,0.38742283629453456
+상권 + 점포 단위 경쟁,store_competition,comp_fran_r200,200m 프랜차이즈 경쟁 (1개),3411,-0.0212912093019199,0.213804469442313
+상권 + 점포 단위 경쟁,store_competition,log_sales_z,로그 총매출 (1표준편차),3411,-0.04675955364077805,0.006306068058966638
+상권 + 점포 단위 경쟁,store_competition,log_floating_z,로그 유동인구 (1표준편차),3411,-0.019029715885911302,0.2665251615643856
+상호작용,interaction,comp_indep_r200,200m 개인 카페 경쟁 (1개),3411,-0.011421461763931638,0.5048783970397906
+상호작용,interaction,comp_fran_r200,200m 프랜차이즈 경쟁 (1개),3411,0.0008139550721054411,0.9620982913711108
+상호작용,interaction,log_sales_z,로그 총매출 (1표준편차),3411,-0.00819019506717596,0.6325285429713695
+상호작용,interaction,log_floating_z,로그 유동인구 (1표준편차),3411,-0.037045447117603984,0.030499419989885167
