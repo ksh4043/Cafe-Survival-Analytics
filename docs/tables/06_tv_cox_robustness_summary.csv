@@ -1,0 +1,5 @@
+﻿robustness,stores,events,intervals,models
+2026-03-31 절단,7344,3067,65221,cutoff_store;cutoff_interaction
+반경 100m,7348,3408,73597,radius_100_store;radius_100_interaction
+반경 500m,7348,3408,73597,radius_500_store;radius_500_interaction
+이월 표시 통제,7348,3408,73597,carried_control

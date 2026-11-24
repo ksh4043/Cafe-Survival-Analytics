@@ -1,0 +1,4 @@
+﻿step,stores_before,excluded_stores,reason,stores_after,events_after,intervals
+시변 패널의 Cox 주 분석 표본 표시,11501,4150,개인 카페·200m 이내 상권·개업 시점 주 분석 조건,7351,3411,
+구간별 필수 상권값 결측 점포 제외,7351,3,후속 구간의 상권값 결측(세부는 06_tv_cox_excluded_intervals.csv),7348,3408,
+최종 시변 Cox 표본,7348,0,개업 시점 기준값으로 로그·표준화 및 상권 구분 더미 생성,7348,3408,73597.0
