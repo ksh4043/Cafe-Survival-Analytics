@@ -1,0 +1,11 @@
+﻿fold,model,n_estimators,min_samples_split,min_samples_leaf,max_features,max_depth,learning_rate,subsample,colsample_bytree
+1,랜덤 생존 숲,60,30.0,15.0,sqrt,,,,
+1,XGBoost,250,,,,2.0,0.04,0.8,0.8
+2,랜덤 생존 숲,60,30.0,15.0,sqrt,,,,
+2,XGBoost,250,,,,2.0,0.04,0.8,0.8
+3,랜덤 생존 숲,60,30.0,15.0,sqrt,,,,
+3,XGBoost,250,,,,2.0,0.04,0.8,0.8
+4,랜덤 생존 숲,60,30.0,15.0,sqrt,,,,
+4,XGBoost,250,,,,2.0,0.04,0.8,0.8
+5,랜덤 생존 숲,60,30.0,15.0,sqrt,,,,
+5,XGBoost,250,,,,2.0,0.04,0.8,0.8
