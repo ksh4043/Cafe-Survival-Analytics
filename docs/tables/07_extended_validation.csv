@@ -1,0 +1,15 @@
+﻿check,mismatch_n
+overlap identifiers,0
+comp_indep_r200 contemporary equality,0
+comp_fran_r200 contemporary equality,0
+franchise type sum equals total,0
+franchise bands sum equals total,0
+independent bands sum equals total,0
+published franchise-type recreation: comp_fran_r0_100,0
+published franchise-type recreation: comp_fran_r100_200,0
+published franchise-type recreation: comp_indep_r0_100,0
+published franchise-type recreation: comp_indep_r100_200,0
+published franchise-type recreation: comp_fran_lowcost_r200,0
+published franchise-type recreation: comp_fran_major_r200,0
+published franchise-type recreation: comp_fran_drink_r200,0
+published franchise-type recreation: comp_fran_other_r200,0
