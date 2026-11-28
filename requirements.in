@@ -9,3 +9,4 @@ matplotlib
 python-dotenv
 openpyxl
 pyarrow
+python-docx
