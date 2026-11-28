@@ -1,0 +1,6 @@
+﻿model,설정
+전체 로지스틱,"C=1.0, class_weight=balanced"
+의사결정나무,"max_depth=4, min_samples_leaf=20, class_weight=balanced"
+랜덤 포레스트,"n_estimators=150, max_depth=8, min_samples_leaf=20, class_weight=balanced"
+XGBoost,"n_estimators=200, max_depth=3, learning_rate=0.05; scale_pos_weight=각 학습 분할 생존 수/폐업 수"
+공통,주 결과=학습 OOF 1−폐업비율 분위수; 부록=OOF F1 최대 및 고정 0.5
